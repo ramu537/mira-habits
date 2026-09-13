@@ -1,0 +1,160 @@
+import { useCallback, useEffect, useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth, googleProvider, signInWithPopup, signOut } from "./config/firebase";
+import { configureAccessTokenProvider } from "./api/client";
+import AppShell from "./components/AppShell";
+import HabitDialog from "./components/HabitDialog";
+import LoginScreen from "./components/LoginScreen";
+import { ErrorState, LoadingState } from "./components/PageState";
+import Toast from "./components/Toast";
+import { useHabitManager } from "./hooks/useHabitManager";
+import HistoryPage from "./pages/HistoryPage";
+import TodayPage from "./pages/TodayPage";
+
+function loginMessage(error) {
+  const code = error?.code || "";
+  if (code === "auth/popup-closed-by-user") return "Sign-in was closed before it finished. Try again when you are ready.";
+  if (code === "auth/popup-blocked") return "Your browser blocked the sign-in window. Allow pop-ups for Mira and try again.";
+  if (code === "auth/network-request-failed") return "Could not reach Google authentication. Check your connection and try again.";
+  return "Could not sign you in right now. Please try again.";
+}
+
+if (typeof window !== "undefined" && import.meta.env.DEV && window.location.search.includes("dev=true")) {
+  localStorage.setItem("mira-dev-user", "true");
+}
+
+export default function App() {
+  const [user, setUser] = useState(() => {
+    if (import.meta.env.DEV && typeof window !== "undefined" && (window.location.search.includes("dev=true") || localStorage.getItem("mira-dev-user") === "true")) {
+      return { uid: "dev-user", email: "mani@mira.app", displayName: "Mani", getIdToken: async () => "dev-mock-token" };
+    }
+    return null;
+  });
+  const [authReady, setAuthReady] = useState(() => {
+    if (import.meta.env.DEV && typeof window !== "undefined" && (window.location.search.includes("dev=true") || localStorage.getItem("mira-dev-user") === "true")) {
+      return true;
+    }
+    return false;
+  });
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState("");
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        configureAccessTokenProvider(async () => currentUser.getIdToken());
+        setUser(currentUser);
+      } else if (import.meta.env.DEV && (window.location.search.includes("dev=true") || localStorage.getItem("mira-dev-user") === "true")) {
+        configureAccessTokenProvider(async () => "dev-mock-token");
+        setUser({ uid: "dev-user", email: "mani@mira.app", displayName: "Mani", getIdToken: async () => "dev-mock-token" });
+      } else {
+        configureAccessTokenProvider(null);
+        setUser(null);
+      }
+      setAuthReady(true);
+    });
+    return unsubscribe;
+  }, []);
+
+  async function login() {
+    setAuthBusy(true);
+    setAuthError("");
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      setAuthError(loginMessage(err));
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function logout() {
+    setAuthError("");
+    try {
+      localStorage.removeItem("mira-dev-user");
+      await signOut(auth);
+      configureAccessTokenProvider(null);
+      setUser(null);
+    } catch {
+      setAuthError("Could not sign you out right now. Please try again.");
+    }
+  }
+
+  const manager = useHabitManager(user);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingHabit, setEditingHabit] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [toast, setToast] = useState(null);
+  const closeToast = useCallback(() => setToast(null), []);
+
+  function openCreate() { setEditingHabit(null); setDialogOpen(true); }
+  function openEdit(habit) { setEditingHabit(habit); setDialogOpen(true); }
+  function closeDialog() { if (!saving) { setDialogOpen(false); setEditingHabit(null); } }
+
+  async function saveHabit(payload) {
+    setSaving(true);
+    try {
+      await manager.actions.saveHabit(payload, editingHabit?.id);
+      setDialogOpen(false);
+      setEditingHabit(null);
+      setToast({ tone: "success", message: editingHabit ? "Habit updated." : "Habit created." });
+    } catch (error) {
+      setToast({ tone: "error", message: error.message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function toggleHabit(habit, completed) {
+    try {
+      await manager.actions.toggleHabit(habit, completed);
+    } catch (error) {
+      setToast({ tone: "error", message: error.message });
+    }
+  }
+
+  async function deleteHabit(id) {
+    setDeletingId(id);
+    try {
+      await manager.actions.deleteHabit(id);
+      setToast({ tone: "success", message: "Habit deleted." });
+      return true;
+    } catch (error) {
+      setToast({ tone: "error", message: error.message });
+      return false;
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  if (!authReady) {
+    return <LoadingState message="Connecting to your habits workspace..." />;
+  }
+
+  if (!user) {
+    return <LoginScreen onLogin={login} error={authError} loading={authBusy} />;
+  }
+
+  let content;
+  if (!manager.ready && manager.loading) content = <LoadingState />;
+  else if (!manager.ready && manager.loadError) content = <ErrorState message={manager.loadError} onRetry={manager.retry} />;
+  else content = (
+    <Routes>
+      <Route path="/" element={<TodayPage habits={manager.habits} today={manager.today} togglingIds={manager.togglingIds} deletingId={deletingId} onAdd={openCreate} onToggle={toggleHabit} onEdit={openEdit} onDelete={deleteHabit} />} />
+      <Route path="/history" element={<HistoryPage habits={manager.habits} today={manager.today} />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+
+  return (
+    <>
+      <AppShell loading={manager.loading} onAdd={openCreate} user={user} onLogout={logout}>
+        {content}
+      </AppShell>
+      <HabitDialog open={dialogOpen} habit={editingHabit} busy={saving} onClose={closeDialog} onSave={saveHabit} />
+      <Toast toast={toast} onClose={closeToast} />
+    </>
+  );
+}
