@@ -1,4 +1,4 @@
-import { dateRange, localDateKey, shiftDate } from "./dates.js";
+import { dateRange, localDateKey, shiftDate, habitToday } from "./dates.js";
 
 // Hex values are required by the existing backend's HabitRequest contract.
 export const habitPalette = [
@@ -25,7 +25,14 @@ export function cadenceLabel(habit) {
 }
 
 export function isCompleted(habit, dateKey) {
-  return (habit.completedDates || []).includes(dateKey);
+    return (habit.completedDates || []).includes(dateKey);
+}
+
+export function weeklyProgress(habit, dateKey) {
+  const monday = startOfWeek(dateKey);
+  const since = habit.scheduleSince ? habitToday(new Date(habit.scheduleSince)) : monday;
+  const count = new Set((habit.completedDates || []).filter(day => day >= monday && day >= since && day <= dateKey)).size;
+  return { count, target: habit.targetPerWeek, remaining: Math.max(0, habit.targetPerWeek - count) };
 }
 
 export function habitStats(habit, endDate = localDateKey(), periodDays = 30) {
@@ -135,4 +142,3 @@ function weeklyBestStreak(completed, target) {
   });
   return best;
 }
-

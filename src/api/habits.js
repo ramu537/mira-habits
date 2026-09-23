@@ -1,6 +1,7 @@
 import { apiRequest } from "./client";
 
 export const habitApi = {
+  analyze(date) { return apiRequest(`/habits/analysis?${new URLSearchParams({ date })}`); },
   list(start, end) {
     return apiRequest(`/habits?${new URLSearchParams({ start, end })}`);
   },
@@ -20,4 +21,3 @@ export const habitApi = {
     return apiRequest(`/habits/${encodeURIComponent(id)}`, { method: "DELETE" });
   },
 };
-

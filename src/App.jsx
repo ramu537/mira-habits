@@ -81,6 +81,12 @@ export default function App() {
     }
   }
 
+  if (!authReady) return <LoadingState message="Connecting to your habits workspace..." />;
+  if (!user) return <LoginScreen onLogin={login} error={authError} loading={authBusy} />;
+  return <HabitWorkspace key={user.uid} user={user} onLogout={logout} />;
+}
+
+function HabitWorkspace({ user, onLogout }) {
   const manager = useHabitManager(user);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
@@ -129,28 +135,21 @@ export default function App() {
     }
   }
 
-  if (!authReady) {
-    return <LoadingState message="Connecting to your habits workspace..." />;
-  }
-
-  if (!user) {
-    return <LoginScreen onLogin={login} error={authError} loading={authBusy} />;
-  }
-
   let content;
   if (!manager.ready && manager.loading) content = <LoadingState />;
   else if (!manager.ready && manager.loadError) content = <ErrorState message={manager.loadError} onRetry={manager.retry} />;
   else content = (
     <Routes>
-      <Route path="/" element={<TodayPage habits={manager.habits} today={manager.today} togglingIds={manager.togglingIds} deletingId={deletingId} onAdd={openCreate} onToggle={toggleHabit} onEdit={openEdit} onDelete={deleteHabit} />} />
-      <Route path="/history" element={<HistoryPage habits={manager.habits} today={manager.today} />} />
+      <Route path="/" element={<TodayPage manager={manager} deletingId={deletingId} onAdd={openCreate} onToggle={toggleHabit} onEdit={openEdit} onDelete={deleteHabit} />} />
+      <Route path="/history" element={<HistoryPage habits={manager.habits} today={manager.today} analysis={manager.analysis} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 
   return (
     <>
-      <AppShell loading={manager.loading} onAdd={openCreate} user={user} onLogout={logout}>
+      <AppShell loading={manager.loading} onAdd={openCreate} user={user} onLogout={onLogout}>
+        {manager.ready && manager.loadError && <div className="habit-refresh-error" role="alert"><p>Your habits could not be refreshed. Displayed records may be out of date.</p><button className="button button--secondary" type="button" disabled={manager.loading || manager.writing} onClick={manager.retry}>Refresh records</button></div>}
         {content}
       </AppShell>
       <HabitDialog open={dialogOpen} habit={editingHabit} busy={saving} onClose={closeDialog} onSave={saveHabit} />

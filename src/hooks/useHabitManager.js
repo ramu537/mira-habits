@@ -1,88 +1,73 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { habitApi } from "../api/habits";
-import { dateRange, localDateKey } from "../lib/dates";
+import { dateRange, habitToday } from "../lib/dates";
 
-export function useHabitManager(user = null) {
-  const today = localDateKey();
-  const requestSequence = useRef(0);
-  const toggleLocks = useRef(new Set());
+export function useHabitManager(user) {
+  const [today, setToday] = useState(habitToday);
   const [habits, setHabits] = useState([]);
-  const [togglingIds, setTogglingIds] = useState(new Set());
-  const [loading, setLoading] = useState(false);
-  const [ready, setReady] = useState(false);
-  const [loadError, setLoadError] = useState("");
-
+  const [analysis, setAnalysis] = useState(null);
+  const [analysisError, setAnalysisError] = useState("");
+  const [loading, setLoading] = useState(true), [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState(""), [writing, setWriting] = useState(false);
+  const live = useRef(false), sequence = useRef(0), lock = useRef(false);
+  useEffect(() => { live.current = true; return () => { live.current = false; sequence.current++; }; }, []);
   const load = useCallback(async () => {
-    if (!user) return;
-    const requestId = ++requestSequence.current;
+    if (!user || lock.current) return;
+    const request = ++sequence.current;
     setLoading(true);
-    setLoadError("");
     try {
-      const dates = dateRange(today, 90);
-      const result = await habitApi.list(dates[0], today);
-      if (requestId !== requestSequence.current) return;
-      setHabits(Array.isArray(result) ? result : []);
-      setReady(true);
+      const [rows, intelligence] = await Promise.all([
+        habitApi.list(dateRange(today, 90)[0], today),
+        habitApi.analyze(today).then(value => ({ value })).catch(() => ({ error: "Insights could not be refreshed." })),
+      ]);
+      if (!live.current || request !== sequence.current) return;
+      setHabits(rows || []); setReady(true); setLoadError("");
+      setAnalysis(intelligence.value || null); setAnalysisError(intelligence.error || "");
     } catch (error) {
-      if (requestId !== requestSequence.current) return;
-      setLoadError(error.message);
+      if (!live.current || request !== sequence.current) return;
+      setLoadError(error.message || "Habits could not be refreshed.");
+      setAnalysis(null); setAnalysisError("Refresh your records before using insights.");
     } finally {
-      if (requestId === requestSequence.current) setLoading(false);
+      if (live.current && request === sequence.current) setLoading(false);
     }
-  }, [user, today]);
-
+  }, [user?.uid, today]);
+  useEffect(() => { void load(); }, [load]);
   useEffect(() => {
-    if (user) {
-      load();
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      setToday(habitToday()); void load();
+    };
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
+  }, [load]);
+  async function write(operation, apply) {
+    if (lock.current) throw new Error("A habit change is still saving. Please wait.");
+    lock.current = true; sequence.current++; setWriting(true); setAnalysis(null); setAnalysisError("");
+    try {
+      const value = await operation();
+      if (live.current) apply(value);
+      return value;
+    } finally {
+      lock.current = false;
+      if (live.current) { setWriting(false); void load(); }
     }
-    return () => { requestSequence.current += 1; };
-  }, [load, user]);
-
-  const actions = useMemo(() => ({
-    async saveHabit(payload, editingId = null) {
-      const saved = editingId
-        ? await habitApi.update(editingId, payload)
-        : await habitApi.create(payload);
-      setHabits((current) => editingId
-        ? current.map((habit) => habit.id === saved.id ? saved : habit)
-        : [...current, saved]);
-      return saved;
-    },
-    async deleteHabit(id) {
-      await habitApi.remove(id);
-      setHabits((current) => current.filter((habit) => habit.id !== id));
-    },
-    async toggleHabit(habit, completed) {
-      if (toggleLocks.current.has(habit.id)) return false;
-      toggleLocks.current.add(habit.id);
-      setTogglingIds((current) => new Set(current).add(habit.id));
-      const previousDates = [...(habit.completedDates || [])];
-      setHabits((current) => current.map((item) => item.id === habit.id ? {
-        ...item,
-        completedDates: completed
-          ? Array.from(new Set([...(item.completedDates || []), today])).sort()
-          : (item.completedDates || []).filter((date) => date !== today),
-      } : item));
-
-      try {
-        await habitApi.setCompletion(habit.id, today, completed);
-        return true;
-      } catch (error) {
-        setHabits((current) => current.map((item) => item.id === habit.id
-          ? { ...item, completedDates: previousDates }
-          : item));
-        throw error;
-      } finally {
-        toggleLocks.current.delete(habit.id);
-        setTogglingIds((current) => {
-          const next = new Set(current);
-          next.delete(habit.id);
-          return next;
-        });
-      }
-    },
-  }), [today]);
-
-  return { today, habits, togglingIds, loading, ready, loadError, retry: load, actions };
+  }
+  const actions = {
+    saveHabit: (payload, id = null) => write(
+      () => id ? habitApi.update(id, payload) : habitApi.create(payload),
+      saved => setHabits(current => id
+        ? current.map(habit => habit.id === saved.id ? { ...saved, completedDates: habit.completedDates } : habit)
+        : [...current, saved])),
+    deleteHabit: id => write(() => habitApi.remove(id), () => setHabits(current => current.filter(h => h.id !== id))),
+    toggleHabit: (habit, completed) => write(
+      () => habitApi.setCompletion(habit.id, today, completed),
+      () => setHabits(current => current.map(item => item.id !== habit.id ? item : {
+        ...item, completedDates: completed ? [...new Set([...(item.completedDates || []), today])].sort()
+          : (item.completedDates || []).filter(date => date !== today),
+      }))),
+  };
+  return { today, habits, analysis: analysis?.date === today ? analysis : null, analysisError,
+    loading, ready, loadError, writing, retry: load, actions };
 }
-
