@@ -37,10 +37,6 @@ export default function AppShell({ loading, onAdd, user, onLogout, children }) {
         <Brand />
         <Navigation />
         <div className="sidebar-bottom">
-          <div className="sidebar-note">
-            <span className="sidebar-note__pulse" />
-            <span><strong>Small steps compound</strong><small>Return, check in, continue</small></span>
-          </div>
 
           {user && (
             <div className="user-profile">
@@ -68,7 +64,7 @@ export default function AppShell({ loading, onAdd, user, onLogout, children }) {
       <div className="app-column">
         <header className="topbar">
           <div className="topbar-brand"><Brand /></div>
-          <span className="topbar-context">One meaningful check at a time</span>
+          <span className="topbar-context">Your routines</span>
           <button className="button button--primary topbar-add" type="button" onClick={onAdd}>
             <Plus size={18} strokeWidth={2.4} /> New habit
           </button>

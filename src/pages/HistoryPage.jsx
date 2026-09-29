@@ -18,7 +18,7 @@ export default function HistoryPage({ habits, today, analysis }) {
         const progress = analysis?.habits.find(item => item.id === habit.id);
         return <article className="history-row" key={habit.id} style={{ "--habit-color": paletteToken(habit.color) }}>
           <header><div><span className="habit-dot" /><strong>{habit.name}</strong></div>
-            {progress && <div className="history-row__stats"><span><small>Current window streak</small><strong>{progress.currentStreak} {progress.streakUnit}</strong></span><span><small>Best in window</small><strong>{progress.bestStreak} {progress.streakUnit}</strong></span></div>}
+            {progress && <div className="history-row__stats"><span><small>Current window streak</small><strong>{progress.currentStreak} {progress.currentStreak === 1 ? progress.streakUnit.replace(/s$/, "") : progress.streakUnit}</strong></span><span><small>Best in window</small><strong>{progress.bestStreak} {progress.bestStreak === 1 ? progress.streakUnit.replace(/s$/, "") : progress.streakUnit}</strong></span></div>}
           </header>
           <p className="habit-history-note">{cadenceLabel(habit)}{progress?.scheduleChanged ? " · Schedule changed; older check-ins are preserved, not rescored." : ""}</p>
           {progress && <p className="habit-history-note">{progress.completionRate == null ? "Not enough closed periods for a rate." : progress.completionRate + "% · " + progress.rateLabel}</p>}

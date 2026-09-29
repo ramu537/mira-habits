@@ -113,9 +113,10 @@ function HabitWorkspace({ user, onLogout }) {
     }
   }
 
-  async function toggleHabit(habit, completed) {
+  async function toggleHabit(habit, completed, day) {
     try {
-      await manager.actions.toggleHabit(habit, completed);
+      await manager.actions.toggleHabit(habit, completed, day);
+      if (day && day !== manager.today) setToast({ tone: "success", message: `${habit.name}: ${day} ${completed ? "recorded" : "cleared"}.` });
     } catch (error) {
       setToast({ tone: "error", message: error.message });
     }

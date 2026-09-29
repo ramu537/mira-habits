@@ -28,6 +28,12 @@ export function isCompleted(habit, dateKey) {
     return (habit.completedDates || []).includes(dateKey);
 }
 
+export function canRecordDay(habit, day, today) {
+  if (day > today) return false;
+  if (isCompleted(habit, day)) return true;
+  return !habit.createdAt || day >= habitToday(new Date(habit.createdAt));
+}
+
 export function weeklyProgress(habit, dateKey) {
   const monday = startOfWeek(dateKey);
   const since = habit.scheduleSince ? habitToday(new Date(habit.scheduleSince)) : monday;

@@ -1,25 +1,51 @@
-import { RefreshCw, Sparkles } from "lucide-react";
+import { ArrowUpRight, RefreshCw, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import { usefulObservations } from "../lib/coaching";
 
-export default function HabitInsights({ manager }) {
-  const { analysis, analysisError, loading, writing, retry } = manager;
+export default function HabitInsights({ manager, onEdit }) {
+  const { analysis, habits, analysisError, loading, writing, retry } = manager;
   const busy = loading || writing;
-  if (!analysis) return <aside className="panel habit-insights" aria-busy={busy}><header><Sparkles size={18} /><h2>Habit insights</h2></header>
-    {analysisError ? <><p role="alert">Insights couldn’t be refreshed. Your saved habits are not affected.</p><button className="button button--secondary" type="button" onClick={retry} disabled={busy}>Retry insights</button></> : <p role="status">{writing ? "Saving your check-in…" : "Reading your habit patterns…"}</p>}</aside>;
-  const observations = analysis.observations;
-  const next = analysis.habits.find(habit => !habit.completedToday && (habit.cadence === "DAILY" || habit.weekRemaining > 0)) || analysis.habits[0];
-  function observation(item) {
-    return <article className="habit-observation" key={item.id}><h3>{item.headline}</h3>
-      {item.assistantInterpretation ? <><span className="habit-insight-origin">Connected AI explanation</span><p>{item.assistantInterpretation.explanation}</p></> : <><span className="habit-insight-origin">From your records</span><p>{item.explanation}</p></>}
-      <details><summary>Supporting records</summary><dl>{item.evidence.map(fact => <div key={fact.key}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}</dl><p>{item.coverage.note}</p></details>
+  const observations = usefulObservations(analysis?.observations);
+  const primary = observations[0];
+  const setup = habits.find(habit => !habit.cue) || habits[0];
+  function evidence(item) {
+    return <details className="coach-evidence"><summary>Why this appeared</summary>
+      <dl>{item.evidence.map(fact => <div key={fact.key}><dt>{fact.label}</dt><dd>{fact.value || "Not provided"}</dd></div>)}</dl>
+      <p>{item.coverage.note}</p></details>;
+  }
+  function brief(item, secondary = false) {
+    const ai = item.assistantInterpretation;
+    return <article className={secondary ? "coach-brief coach-brief--secondary" : "coach-brief"}>
+      <span className="coach-source">{ai ? "Connected AI · based on your records" : "Calculated from your records"}</span>
+      <h3>{item.headline}</h3><p>{ai?.explanation || item.explanation}</p>
+      <div className="coach-action"><span>Try next</span><p>{ai?.nextAction || item.relevance}</p></div>
+      {evidence(item)}
     </article>;
   }
-  return <aside className="panel habit-insights" aria-busy={busy}>
-    <header><Sparkles size={18} /><h2>Habit insights</h2><button type="button" className="icon-button" aria-label="Refresh habit insights" disabled={busy} onClick={retry}><RefreshCw size={16} /></button></header>
-    <p className="habit-insight-summary">{analysis.summary}</p>
-    {observations.length ? <>{observations.slice(0, 3).map(observation)}{observations.length > 3 && <details className="more-habit-insights"><summary>More habit observations ({observations.length - 3})</summary>{observations.slice(3).map(observation)}</details>}</> : <p className="habit-insight-empty">Not enough recorded history for a pattern yet. Check in when you complete something; there’s no need to fill gaps with guesses.</p>}
-    {next && <section className="habit-next-step"><span className="eyebrow">One next step</span><h3>{next.name}</h3><p>{next.nextStep}</p>{next.purpose && <p className="habit-purpose">Your purpose: {next.purpose}</p>}</section>}
-    <Link className="habit-history-link" to="/history">View history →</Link>
-    <details className="habit-analysis-method"><summary>How these insights work</summary><p>Numbers are calculated from your records. Connected-AI explanations appear when your assistant submits an insight; the app does not pretend one was generated when it wasn’t.</p><ul>{analysis.assumptions.map(text => <li key={text}>{text}</li>)}</ul><p>Updated {new Intl.DateTimeFormat("en-IN", { timeZone: analysis.timeZone, dateStyle: "medium", timeStyle: "short" }).format(new Date(analysis.generatedAt))} · {analysis.timeZone}</p><a href="https://www.niddk.nih.gov/health-information/diet-nutrition/changing-habits-better-health" target="_blank" rel="noopener noreferrer">Background: small steps, tracking and setbacks</a></details>
+  return <aside className="routine-coach" aria-busy={busy}>
+    <header className="coach-header"><span><Sparkles size={18} /><h2>Your next move</h2></span><button type="button" className="icon-button" aria-label="Refresh habit coaching" disabled={busy} onClick={retry}><RefreshCw size={17} /></button></header>
+    {!analysis ? <div className="coach-placeholder">{analysisError
+      ? <><p role="alert">Coaching couldn’t be refreshed. Your saved check-ins are unaffected.</p><button className="button button--secondary" type="button" onClick={retry} disabled={busy}>Retry coaching</button></>
+      : <p role="status">{writing ? "Saving your check-in and refreshing the brief…" : "Looking for useful patterns…"}</p>}</div>
+      : primary ? <>
+        {brief(primary)}
+        {observations.length > 1 && <details className="coach-more"><summary>{observations.length - 1} more {observations.length === 2 ? "finding" : "findings"}</summary>{observations.slice(1).map(item => <div key={item.id}>{brief(item, true)}</div>)}</details>}
+      </> : <div className="coach-placeholder">
+        <span className="coach-source">Setup suggestion · not a detected pattern</span>
+        <h3>{setup ? "Make the next repetition easier" : "A useful review starts with your routine"}</h3>
+        <p>{setup ? "There isn’t a strong pattern to report yet. You don’t need more statistics to take a small next step." : "Add a habit, then record what you actually do. Your brief will use that history—not guess at it."}</p>
+        {setup && <div className="coach-action"><span>{setup.name}</span><p>{setup.cue
+          ? "Use your saved cue for the next planned repetition: " + setup.cue + ". Review how it worked after a week."
+          : "Pick a time or an existing routine to attach this habit to. A specific cue gives you something useful to review."}</p>
+          <button className="coach-link" type="button" disabled={writing} onClick={() => onEdit(setup)}>{setup.cue ? "Refine this routine" : "Add a cue"} <ArrowUpRight size={16} /></button>
+        </div>}
+      </div>}
+    <footer className="coach-footer"><Link to="/history">Explore your history <ArrowUpRight size={16} /></Link>
+      {analysis?.assistantStatus === "PENDING" && <p className="coach-status">AI review queued for your connected assistant. Calculated guidance is available now.</p>}
+      {analysis?.assistantStatus === "UNAVAILABLE" && <p className="coach-status">The AI review is unavailable. Showing calculated guidance.</p>}
+      <details><summary>About this brief</summary><p>Patterns use up to 90 days. Comparisons use complete weeks; blank dates are not confirmed failures. Health and learning outcomes are not measured.</p><p>AI wording appears only after your connected assistant submits it. Refresh reads saved coaching; it does not run an AI model.</p>
+        {analysis && <p>Records refreshed {new Intl.DateTimeFormat("en-IN", { timeZone: analysis.timeZone, hour: "numeric", minute: "2-digit" }).format(new Date(analysis.generatedAt))} · India time</p>}
+      </details>
+    </footer>
   </aside>;
 }

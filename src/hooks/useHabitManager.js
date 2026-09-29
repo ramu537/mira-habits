@@ -61,11 +61,11 @@ export function useHabitManager(user) {
         ? current.map(habit => habit.id === saved.id ? { ...saved, completedDates: habit.completedDates } : habit)
         : [...current, saved])),
     deleteHabit: id => write(() => habitApi.remove(id), () => setHabits(current => current.filter(h => h.id !== id))),
-    toggleHabit: (habit, completed) => write(
-      () => habitApi.setCompletion(habit.id, today, completed),
+    toggleHabit: (habit, completed, day = today) => write(
+      () => habitApi.setCompletion(habit.id, day, completed),
       () => setHabits(current => current.map(item => item.id !== habit.id ? item : {
-        ...item, completedDates: completed ? [...new Set([...(item.completedDates || []), today])].sort()
-          : (item.completedDates || []).filter(date => date !== today),
+        ...item, completedDates: completed ? [...new Set([...(item.completedDates || []), day])].sort()
+          : (item.completedDates || []).filter(date => date !== day),
       }))),
   };
   return { today, habits, analysis: analysis?.date === today ? analysis : null, analysisError,

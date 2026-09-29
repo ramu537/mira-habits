@@ -2,7 +2,7 @@ import { Check, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { habitPalette } from "../lib/habits";
 
-const blankHabit = { name: "", cadence: "DAILY", targetPerWeek: 3, color: habitPalette[0].value, category: "GENERAL", purpose: "" };
+const blankHabit = { name: "", cadence: "DAILY", targetPerWeek: 3, color: habitPalette[0].value, category: "GENERAL", purpose: "", cue: "", minimumAction: "" };
 
 export default function HabitDialog({ open, habit, busy, onClose, onSave }) {
   const ref = useRef(null);
@@ -11,7 +11,7 @@ export default function HabitDialog({ open, habit, busy, onClose, onSave }) {
 
   useEffect(() => {
     if (!open) return;
-    setForm(habit ? { name: habit.name, cadence: habit.cadence, targetPerWeek: habit.targetPerWeek, color: habit.color, category: habit.category || "GENERAL", purpose: habit.purpose || "" } : blankHabit);
+    setForm(habit ? { name: habit.name, cadence: habit.cadence, targetPerWeek: habit.targetPerWeek, color: habit.color, category: habit.category || "GENERAL", purpose: habit.purpose || "", cue: habit.cue || "", minimumAction: habit.minimumAction || "" } : blankHabit);
     setAttempted(false);
   }, [open]);
 
@@ -53,6 +53,11 @@ export default function HabitDialog({ open, habit, busy, onClose, onSave }) {
           {form.cadence === "WEEKLY" && <label className="field"><span>Times per week</span><select value={form.targetPerWeek} onChange={(event) => update("targetPerWeek", Number(event.target.value))}>{[1, 2, 3, 4, 5, 6, 7].map((value) => <option key={value} value={value}>{value} {value === 1 ? "time" : "times"}</option>)}</select></label>}
 
           <details className="habit-context-fields"><summary>Personalise insights · optional</summary><label className="field"><span>Area of life</span><select value={form.category} onChange={(event) => update("category", event.target.value)}>{[["GENERAL", "General"], ["HEALTH", "Health"], ["FITNESS", "Fitness"], ["STUDY", "Study"], ["WELLBEING", "Wellbeing"], ["CUSTOM", "Something else"]].map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label><label className="field"><span>What does this support?</span><input maxLength={300} value={form.purpose} placeholder="For example: a small reading session after breakfast" onChange={(event) => update("purpose", event.target.value)} /></label><p>Only add context you want stored and shared with your connected assistant. No medical outcomes are inferred.</p></details>
+          <details className="habit-context-fields"><summary>Your cue and smaller version · optional</summary>
+            <label className="field"><span>When will you do it?</span><input maxLength={160} value={form.cue} placeholder="After breakfast, before opening my phone" onChange={(event) => update("cue", event.target.value)} /></label>
+            <label className="field"><span>A smaller version for difficult days</span><input maxLength={160} value={form.minimumAction} placeholder="Read one page" onChange={(event) => update("minimumAction", event.target.value)} /></label>
+            <p>This context is saved and shared with your connected assistant. A smaller version is a planning option—not an automatic check-in for the full habit.</p>
+          </details>
           {habit && <p className="habit-schedule-note">Changing the cadence or weekly target starts a new statistical schedule. Previous check-ins remain in history.</p>}
 
           <fieldset className="choice-fieldset"><legend>Color</legend><div className="color-choices">
