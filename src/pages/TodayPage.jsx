@@ -2,7 +2,6 @@ import { Plus, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import ConfirmDialog from "../components/ConfirmDialog";
 import HabitRow from "../components/HabitRow";
-import HabitInsights from "../components/HabitInsights";
 import { dateRange, fullDate, shortDate } from "../lib/dates";
 import { isCompleted, weeklyProgress } from "../lib/habits";
 
@@ -44,7 +43,6 @@ export default function TodayPage({ manager, deletingId, onAdd, onToggle, onEdit
           <footer className="routine-board__footer"><span><i className="recorded-dot" /> Recorded <i className="unrecorded-dot" /> Unrecorded</span><span>India time · Weekly targets reset Monday</span></footer>
         </> : <div className="routine-empty"><Sparkles size={28} /><h3>Start with one small routine</h3><p>Give it a name and choose how often. Everything else is optional.</p><button className="button button--primary" type="button" onClick={onAdd}><Plus size={17} /> Create a habit</button></div>}
       </section>
-      <HabitInsights manager={manager} onEdit={onEdit} />
     </div>
     <ConfirmDialog open={Boolean(pendingDelete)} habit={pendingDelete} busy={deletingId === pendingDelete?.id} onCancel={() => setPendingDelete(null)} onConfirm={confirmDelete} />
   </div>;

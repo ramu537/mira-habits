@@ -28,7 +28,7 @@ function Navigation({ mobile = false }) {
   );
 }
 
-export default function AppShell({ loading, onAdd, user, onLogout, children }) {
+export default function AppShell({ loading, onAdd, onOpenIntelligence, user, onLogout, children }) {
   const initialLetter = (user?.displayName || user?.email || "U").charAt(0).toUpperCase();
 
   return (
@@ -65,6 +65,9 @@ export default function AppShell({ loading, onAdd, user, onLogout, children }) {
         <header className="topbar">
           <div className="topbar-brand"><Brand /></div>
           <span className="topbar-context">Your routines</span>
+          <button className="icon-button topbar-intelligence" type="button" onClick={onOpenIntelligence} aria-label="Open habit intelligence" title="Habit intelligence">
+            <Sparkles size={18} />
+          </button>
           <button className="button button--primary topbar-add" type="button" onClick={onAdd}>
             <Plus size={18} strokeWidth={2.4} /> New habit
           </button>

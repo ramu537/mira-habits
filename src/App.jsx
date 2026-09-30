@@ -5,6 +5,7 @@ import { auth, googleProvider, signInWithPopup, signOut } from "./config/firebas
 import { configureAccessTokenProvider } from "./api/client";
 import AppShell from "./components/AppShell";
 import HabitDialog from "./components/HabitDialog";
+import HabitIntelligenceDialog from "./components/HabitIntelligenceDialog";
 import LoginScreen from "./components/LoginScreen";
 import { ErrorState, LoadingState } from "./components/PageState";
 import Toast from "./components/Toast";
@@ -89,6 +90,7 @@ export default function App() {
 function HabitWorkspace({ user, onLogout }) {
   const manager = useHabitManager(user);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [intelligenceOpen, setIntelligenceOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
@@ -149,11 +151,12 @@ function HabitWorkspace({ user, onLogout }) {
 
   return (
     <>
-      <AppShell loading={manager.loading} onAdd={openCreate} user={user} onLogout={onLogout}>
+      <AppShell loading={manager.loading} onAdd={openCreate} onOpenIntelligence={() => setIntelligenceOpen(true)} user={user} onLogout={onLogout}>
         {manager.ready && manager.loadError && <div className="habit-refresh-error" role="alert"><p>Your habits could not be refreshed. Displayed records may be out of date.</p><button className="button button--secondary" type="button" disabled={manager.loading || manager.writing} onClick={manager.retry}>Refresh records</button></div>}
         {content}
       </AppShell>
       <HabitDialog open={dialogOpen} habit={editingHabit} busy={saving} onClose={closeDialog} onSave={saveHabit} />
+      <HabitIntelligenceDialog open={intelligenceOpen} manager={manager} onClose={() => setIntelligenceOpen(false)} onEdit={openEdit} />
       <Toast toast={toast} onClose={closeToast} />
     </>
   );

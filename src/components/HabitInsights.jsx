@@ -1,8 +1,8 @@
-import { ArrowUpRight, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usefulObservations } from "../lib/coaching";
 
-export default function HabitInsights({ manager, onEdit }) {
+export default function HabitInsights({ manager, onEdit, onNavigate }) {
   const { analysis, habits, analysisError, loading, writing, retry } = manager;
   const busy = loading || writing;
   const observations = usefulObservations(analysis?.observations);
@@ -23,7 +23,6 @@ export default function HabitInsights({ manager, onEdit }) {
     </article>;
   }
   return <aside className="routine-coach" aria-busy={busy}>
-    <header className="coach-header"><span><Sparkles size={18} /><h2>Your next move</h2></span><button type="button" className="icon-button" aria-label="Refresh habit coaching" disabled={busy} onClick={retry}><RefreshCw size={17} /></button></header>
     {!analysis ? <div className="coach-placeholder">{analysisError
       ? <><p role="alert">Coaching couldn’t be refreshed. Your saved check-ins are unaffected.</p><button className="button button--secondary" type="button" onClick={retry} disabled={busy}>Retry coaching</button></>
       : <p role="status">{writing ? "Saving your check-in and refreshing the brief…" : "Looking for useful patterns…"}</p>}</div>
@@ -40,7 +39,7 @@ export default function HabitInsights({ manager, onEdit }) {
           <button className="coach-link" type="button" disabled={writing} onClick={() => onEdit(setup)}>{setup.cue ? "Refine this routine" : "Add a cue"} <ArrowUpRight size={16} /></button>
         </div>}
       </div>}
-    <footer className="coach-footer"><Link to="/history">Explore your history <ArrowUpRight size={16} /></Link>
+    <footer className="coach-footer"><Link to="/history" onClick={onNavigate}>Explore your history <ArrowUpRight size={16} /></Link>
       {analysis?.assistantStatus === "PENDING" && <p className="coach-status">AI review queued for your connected assistant. Calculated guidance is available now.</p>}
       {analysis?.assistantStatus === "UNAVAILABLE" && <p className="coach-status">The AI review is unavailable. Showing calculated guidance.</p>}
       <details><summary>About this brief</summary><p>Patterns use up to 90 days. Comparisons use complete weeks; blank dates are not confirmed failures. Health and learning outcomes are not measured.</p><p>AI wording appears only after your connected assistant submits it. Refresh reads saved coaching; it does not run an AI model.</p>
