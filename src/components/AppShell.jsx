@@ -1,4 +1,4 @@
-import { CalendarRange, LogOut, Plus, Sparkles, SunMedium } from "lucide-react";
+import { CalendarRange, LogOut, Plus, Search, Sparkles, SunMedium } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const navigation = [
@@ -28,7 +28,7 @@ function Navigation({ mobile = false }) {
   );
 }
 
-export default function AppShell({ loading, onAdd, onOpenIntelligence, user, onLogout, children }) {
+export default function AppShell({ loading, onAdd, onOpenIntelligence, onOpenAiCapture, onOpenAiSearch, user, onLogout, children }) {
   const initialLetter = (user?.displayName || user?.email || "U").charAt(0).toUpperCase();
 
   return (
@@ -65,8 +65,12 @@ export default function AppShell({ loading, onAdd, onOpenIntelligence, user, onL
         <header className="topbar">
           <div className="topbar-brand"><Brand /></div>
           <span className="topbar-context">Your routines</span>
+          <button className="icon-button" type="button" onClick={onOpenAiSearch} aria-label="Search memory" title="AI Vector Memory Search (Ctrl+K)"><Search size={18} /></button>
           <button className="icon-button topbar-intelligence" type="button" onClick={onOpenIntelligence} aria-label="Open habit intelligence" title="Habit intelligence">
             <Sparkles size={18} />
+          </button>
+          <button className="button button--ghost" type="button" onClick={onOpenAiCapture} aria-label="AI Habit Builder" title="Create habit with AI" style={{ gap: "0.375rem", display: "inline-flex", alignItems: "center" }}>
+            <Sparkles size={16} /> <span>AI Habit</span>
           </button>
           <button className="button button--primary topbar-add" type="button" onClick={onAdd}>
             <Plus size={18} strokeWidth={2.4} /> New habit
@@ -89,7 +93,12 @@ export default function AppShell({ loading, onAdd, onOpenIntelligence, user, onL
 
         <main className="main-content">{children}</main>
         <Navigation mobile />
-        <button className="mobile-add" type="button" onClick={onAdd} aria-label="Create a habit"><Plus size={24} /></button>
+        <div style={{ position: "fixed", bottom: "1.25rem", right: "1.25rem", display: "flex", gap: "0.75rem", zIndex: 40 }} className="mobile-only-actions">
+          <button className="mobile-add" type="button" onClick={onOpenAiCapture} aria-label="AI Habit Builder" style={{ background: "var(--surface-raised, #ffffff)", color: "var(--accent-strong, #3b82f6)", border: "1px solid var(--border-default, #cbd5e1)" }}>
+            <Sparkles size={22} strokeWidth={2.2} />
+          </button>
+          <button className="mobile-add" type="button" onClick={onAdd} aria-label="Create a habit"><Plus size={24} /></button>
+        </div>
       </div>
     </div>
   );

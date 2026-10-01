@@ -6,6 +6,8 @@ import { configureAccessTokenProvider } from "./api/client";
 import AppShell from "./components/AppShell";
 import HabitDialog from "./components/HabitDialog";
 import HabitIntelligenceDialog from "./components/HabitIntelligenceDialog";
+import AiHabitCaptureModal from "./components/AiHabitCaptureModal";
+import AiMemorySearchDialog from "./components/AiMemorySearchDialog";
 import LoginScreen from "./components/LoginScreen";
 import { ErrorState, LoadingState } from "./components/PageState";
 import Toast from "./components/Toast";
@@ -91,11 +93,24 @@ function HabitWorkspace({ user, onLogout }) {
   const manager = useHabitManager(user);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [intelligenceOpen, setIntelligenceOpen] = useState(false);
+  const [aiCaptureOpen, setAiCaptureOpen] = useState(false);
+  const [aiSearchOpen, setAiSearchOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [toast, setToast] = useState(null);
   const closeToast = useCallback(() => setToast(null), []);
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setAiSearchOpen((prev) => !prev);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   function openCreate() { setEditingHabit(null); setDialogOpen(true); }
   function openEdit(habit) { setEditingHabit(habit); setDialogOpen(true); }
@@ -151,12 +166,32 @@ function HabitWorkspace({ user, onLogout }) {
 
   return (
     <>
-      <AppShell loading={manager.loading} onAdd={openCreate} onOpenIntelligence={() => setIntelligenceOpen(true)} user={user} onLogout={onLogout}>
+      <AppShell
+        loading={manager.loading}
+        onAdd={openCreate}
+        onOpenIntelligence={() => setIntelligenceOpen(true)}
+        onOpenAiCapture={() => setAiCaptureOpen(true)}
+        onOpenAiSearch={() => setAiSearchOpen(true)}
+        user={user}
+        onLogout={onLogout}
+      >
         {manager.ready && manager.loadError && <div className="habit-refresh-error" role="alert"><p>Your habits could not be refreshed. Displayed records may be out of date.</p><button className="button button--secondary" type="button" disabled={manager.loading || manager.writing} onClick={manager.retry}>Refresh records</button></div>}
         {content}
       </AppShell>
       <HabitDialog open={dialogOpen} habit={editingHabit} busy={saving} onClose={closeDialog} onSave={saveHabit} />
       <HabitIntelligenceDialog open={intelligenceOpen} manager={manager} onClose={() => setIntelligenceOpen(false)} onEdit={openEdit} />
+      <AiHabitCaptureModal
+        open={aiCaptureOpen}
+        onClose={() => setAiCaptureOpen(false)}
+        onSuccess={(msg) => {
+          manager.retry();
+          setToast({ tone: "success", message: msg });
+        }}
+      />
+      <AiMemorySearchDialog
+        open={aiSearchOpen}
+        onClose={() => setAiSearchOpen(false)}
+      />
       <Toast toast={toast} onClose={closeToast} />
     </>
   );
