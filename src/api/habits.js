@@ -1,7 +1,17 @@
 import { apiRequest } from "./client";
 
 export const habitApi = {
-  analyze(date) { return apiRequest(`/habits/analysis?${new URLSearchParams({ date })}`); },
+  async analyze(date, regenerate = false) {
+    const [calculated, intelligence] = await Promise.allSettled([
+      apiRequest(`/habits/analysis?${new URLSearchParams({ date })}`),
+      regenerate ? apiRequest("/habits/intelligence/refresh", { method: "POST", body: JSON.stringify({ date }) })
+        : apiRequest(`/habits/intelligence?${new URLSearchParams({ date })}`),
+    ]);
+    if (calculated.status === "rejected") throw calculated.reason;
+    return { ...calculated.value, intelligence: intelligence.status === "fulfilled" ? intelligence.value : {
+      status: "UNAVAILABLE", providerMessage: intelligence.reason?.message || "AI interpretation could not be loaded."
+    }};
+  },
   list(start, end) {
     return apiRequest(`/habits?${new URLSearchParams({ start, end })}`);
   },

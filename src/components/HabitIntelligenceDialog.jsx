@@ -13,6 +13,7 @@ export default function HabitIntelligenceDialog({ open, manager, onClose, onEdit
     if (open && !dialog.open) {
       returnFocusRef.current = document.activeElement;
       dialog.showModal();
+      void manager.refreshIntelligence();
     }
     if (!open && dialog.open) {
       dialog.close();
@@ -37,7 +38,7 @@ export default function HabitIntelligenceDialog({ open, manager, onClose, onEdit
       <header className="dialog-header">
         <div><span className="eyebrow">Based on your check-ins</span><h2 id="habit-intelligence-title"><Sparkles size={19} /> Habit intelligence</h2><p>Review useful patterns and one practical next step when you need it.</p></div>
         <div className="habit-intelligence-dialog__actions">
-          <button className="icon-button" type="button" aria-label="Refresh habit intelligence" title="Refresh" disabled={busy} onClick={manager.retry}><RefreshCw className={busy ? "spin" : ""} size={18} /></button>
+          <button className="icon-button" type="button" aria-label="Refresh habit intelligence" title="Refresh" disabled={busy} onClick={manager.refreshIntelligence}><RefreshCw className={busy ? "spin" : ""} size={18} /></button>
           <button className="icon-button" type="button" aria-label="Close habit intelligence" title="Close" onClick={onClose}><X size={20} /></button>
         </div>
       </header>

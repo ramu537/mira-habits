@@ -3,6 +3,10 @@ import { habitApi } from "../api/habits";
 import { dateRange, habitToday } from "../lib/dates";
 
 export function useHabitManager(user) {
+  const uid = user?.uid || null;
+  const activeUser = useRef(uid);
+  activeUser.current = uid;
+  const [owner, setOwner] = useState(null);
   const [today, setToday] = useState(habitToday);
   const [habits, setHabits] = useState([]);
   const [analysis, setAnalysis] = useState(null);
@@ -11,26 +15,29 @@ export function useHabitManager(user) {
   const [loadError, setLoadError] = useState(""), [writing, setWriting] = useState(false);
   const live = useRef(false), sequence = useRef(0), lock = useRef(false);
   useEffect(() => { live.current = true; return () => { live.current = false; sequence.current++; }; }, []);
-  const load = useCallback(async () => {
+  const load = useCallback(async (regenerate = false) => {
     if (!user || lock.current) return;
     const request = ++sequence.current;
     setLoading(true);
     try {
       const [rows, intelligence] = await Promise.all([
         habitApi.list(dateRange(today, 90)[0], today),
-        habitApi.analyze(today).then(value => ({ value })).catch(() => ({ error: "Insights could not be refreshed." })),
+        habitApi.analyze(today, regenerate === true).then(value => ({ value })).catch(() => ({ error: "Insights could not be refreshed." })),
       ]);
-      if (!live.current || request !== sequence.current) return;
-      setHabits(rows || []); setReady(true); setLoadError("");
+      if (!live.current || request !== sequence.current || activeUser.current !== uid) return;
+      setOwner(uid); setHabits(rows || []); setReady(true); setLoadError("");
       setAnalysis(intelligence.value || null); setAnalysisError(intelligence.error || "");
     } catch (error) {
-      if (!live.current || request !== sequence.current) return;
+      if (!live.current || request !== sequence.current || activeUser.current !== uid) return;
       setLoadError(error.message || "Habits could not be refreshed.");
       setAnalysis(null); setAnalysisError("Refresh your records before using insights.");
     } finally {
-      if (live.current && request === sequence.current) setLoading(false);
+      if (live.current && request === sequence.current && activeUser.current === uid) setLoading(false);
     }
   }, [user?.uid, today]);
+  useEffect(() => {
+    sequence.current++; setOwner(null); setHabits([]); setAnalysis(null); setReady(false); setLoadError(""); setAnalysisError("");
+  }, [uid]);
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
     const refresh = () => {
@@ -43,15 +50,17 @@ export function useHabitManager(user) {
     return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
   }, [load]);
   async function write(operation, apply) {
+    const writeOwner = uid;
+    if (!writeOwner || activeUser.current !== writeOwner) throw new Error("Sign in again before saving.");
     if (lock.current) throw new Error("A habit change is still saving. Please wait.");
     lock.current = true; sequence.current++; setWriting(true); setAnalysis(null); setAnalysisError("");
     try {
       const value = await operation();
-      if (live.current) apply(value);
+      if (live.current && activeUser.current === writeOwner) apply(value);
       return value;
     } finally {
       lock.current = false;
-      if (live.current) { setWriting(false); void load(); }
+      if (live.current) { setWriting(false); if (activeUser.current === writeOwner) void load(); }
     }
   }
   const actions = {
@@ -68,6 +77,6 @@ export function useHabitManager(user) {
           : (item.completedDates || []).filter(date => date !== day),
       }))),
   };
-  return { today, habits, analysis: analysis?.date === today ? analysis : null, analysisError,
-    loading, ready, loadError, writing, retry: load, actions };
+  return { today, habits: owner === uid ? habits : [], analysis: owner === uid && analysis?.date === today ? analysis : null, analysisError,
+    loading, ready: ready && owner === uid, loadError, writing, retry: load, refreshIntelligence: () => load(true), actions };
 }

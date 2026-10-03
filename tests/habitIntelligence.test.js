@@ -43,3 +43,9 @@ test("a saved connected-assistant brief is visible even when it chose a lower ra
   const rows = [1, 2, 3, 4].map(id => ({ id, kind: "HABIT_STEADY", assistantInterpretation: id === 4 ? { explanation: "A grounded brief" } : null }));
   assert.deepEqual(usefulObservations(rows).map(item => item.id), [4, 1, 2]);
 });
+
+test("AI attribution cannot outrank a more urgent calculated capacity finding", () => {
+  const rows = [{ id: "steady-ai", kind: "HABIT_STEADY", assistantInterpretation: { explanation: "AI" } },
+    { id: "capacity", kind: "HABIT_WEEK_CAPACITY" }];
+  assert.equal(usefulObservations(rows)[0].id, "capacity");
+});

@@ -23,6 +23,12 @@ export default function HabitInsights({ manager, onEdit, onNavigate }) {
     </article>;
   }
   return <aside className="routine-coach" aria-busy={busy}>
+    {analysis?.intelligence && <section className="coach-brief"><span className="coach-source">{analysis.intelligence.status === "READY" ? "AI interpretation" : analysis.intelligence.status === "PENDING" ? "AI review in progress" : "Calculated guidance"}</span><p>{analysis.intelligence.assistantInterpretation || analysis.intelligence.guidance}</p>{analysis.intelligence.providerMessage && <small>{analysis.intelligence.providerMessage}</small>}
+      {analysis.intelligence.assistantGeneratedAt && <small>AI updated {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(analysis.intelligence.assistantGeneratedAt))}</small>}
+      <details><summary>AI evidence & coverage</summary><p>{analysis.intelligence.coverage}</p>
+        <dl>{(analysis.intelligence.evidence || []).map(fact => <div key={fact.key}><dt>{fact.label}{analysis.intelligence.assistantEvidenceKeys?.includes(fact.key) ? " · cited by AI" : ""}</dt><dd>{fact.value}</dd></div>)}</dl>
+        <ul>{[...(analysis.intelligence.assumptions || []), ...(analysis.intelligence.safetyNotices || [])].map((item, index) => <li key={index}>{item}</li>)}</ul>
+      </details></section>}
     {!analysis ? <div className="coach-placeholder">{analysisError
       ? <><p role="alert">Coaching couldn’t be refreshed. Your saved check-ins are unaffected.</p><button className="button button--secondary" type="button" onClick={retry} disabled={busy}>Retry coaching</button></>
       : <p role="status">{writing ? "Saving your check-in and refreshing the brief…" : "Looking for useful patterns…"}</p>}</div>
@@ -40,9 +46,9 @@ export default function HabitInsights({ manager, onEdit, onNavigate }) {
         </div>}
       </div>}
     <footer className="coach-footer"><Link to="/history" onClick={onNavigate}>Explore your history <ArrowUpRight size={16} /></Link>
-      {analysis?.assistantStatus === "PENDING" && <p className="coach-status">AI review queued for your connected assistant. Calculated guidance is available now.</p>}
+      {analysis?.assistantStatus === "PENDING" && <p className="coach-status">AI review queued for Mira or your connected assistant. Calculated guidance is available now.</p>}
       {analysis?.assistantStatus === "UNAVAILABLE" && <p className="coach-status">The AI review is unavailable. Showing calculated guidance.</p>}
-      <details><summary>About this brief</summary><p>Patterns use up to 90 days. Comparisons use complete weeks; blank dates are not confirmed failures. Health and learning outcomes are not measured.</p><p>AI wording appears only after your connected assistant submits it. Refresh reads saved coaching; it does not run an AI model.</p>
+      <details><summary>About this brief</summary><p>Patterns use up to 90 days. Comparisons use complete weeks; blank dates are not confirmed failures. Health and learning outcomes are not measured.</p><p>Mira prepares AI interpretations automatically after changes. Connected assistants use the same evidence. Refresh requests a new interpretation without repeating your check-in.</p>
         {analysis && <p>Records refreshed {new Intl.DateTimeFormat("en-IN", { timeZone: analysis.timeZone, hour: "numeric", minute: "2-digit" }).format(new Date(analysis.generatedAt))} · India time</p>}
       </details>
     </footer>
