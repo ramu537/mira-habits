@@ -1,3 +1,4 @@
+import FloatingAssistant from "./components/FloatingAssistant";
 import { useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
@@ -192,6 +193,7 @@ function HabitWorkspace({ user, onLogout }) {
         open={aiSearchOpen}
         onClose={() => setAiSearchOpen(false)}
       />
+      <FloatingAssistant domain={"habits"} userId={user.uid} date={manager.today} />
       <Toast toast={toast} onClose={closeToast} />
     </>
   );

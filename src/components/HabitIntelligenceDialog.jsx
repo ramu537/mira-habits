@@ -1,9 +1,8 @@
-import CoachingWorkspace from "./CoachingWorkspace";
 import { RefreshCw, Sparkles, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import HabitInsights from "./HabitInsights";
 
-export default function HabitIntelligenceDialog({ open, manager, onClose, onEdit, userId }) {
+export default function HabitIntelligenceDialog({ open, manager, onClose, onEdit }) {
   const dialogRef = useRef(null);
   const returnFocusRef = useRef(null);
   const busy = manager.loading || manager.writing;
@@ -43,7 +42,7 @@ export default function HabitIntelligenceDialog({ open, manager, onClose, onEdit
           <button className="icon-button" type="button" aria-label="Close habit intelligence" title="Close" onClick={onClose}><X size={20} /></button>
         </div>
       </header>
-      <CoachingWorkspace domain="habits" userId={userId} date={manager.today} active={open} onNavigate={onClose}><div className="habit-intelligence-dialog__body"><HabitInsights manager={manager} onEdit={editHabit} onNavigate={onClose} /></div></CoachingWorkspace>
+      <div className="habit-intelligence-dialog__body"><HabitInsights manager={manager} onEdit={editHabit} onNavigate={onClose} /></div>
     </div>
   </dialog>;
 }
