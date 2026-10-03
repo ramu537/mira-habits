@@ -179,7 +179,7 @@ function HabitWorkspace({ user, onLogout }) {
         {content}
       </AppShell>
       <HabitDialog open={dialogOpen} habit={editingHabit} busy={saving} onClose={closeDialog} onSave={saveHabit} />
-      <HabitIntelligenceDialog open={intelligenceOpen} manager={manager} onClose={() => setIntelligenceOpen(false)} onEdit={openEdit} />
+      <HabitIntelligenceDialog userId={user.uid} open={intelligenceOpen} manager={manager} onClose={() => setIntelligenceOpen(false)} onEdit={openEdit} />
       <AiHabitCaptureModal
         open={aiCaptureOpen}
         onClose={() => setAiCaptureOpen(false)}
