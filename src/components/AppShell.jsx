@@ -71,10 +71,10 @@ export default function AppShell({ loading, onAdd, onOpenIntelligence, onOpenAiC
           <button className="icon-button topbar-intelligence" type="button" onClick={onOpenIntelligence} aria-label="Open habit intelligence" title="Habit intelligence">
             <Sparkles size={18} />
           </button>
-          <button className="button button--ghost topbar-capture" type="button" onClick={onOpenAiCapture} aria-label="AI Habit Builder" title="Create habit with AI">
-            <Sparkles size={16} /> <span>AI Habit</span>
+          <button className="button button--ghost topbar-capture" type="button" onClick={onAdd} aria-label="Enter habit manually" title="Manual entry — optional">
+            <Plus size={16} /> <span>Manual entry</span>
           </button>
-          <button className="button button--primary topbar-add" type="button" onClick={onAdd}>
+          <button className="button button--primary topbar-add" type="button" onClick={onOpenAiCapture}>
             <Plus size={18} strokeWidth={2.4} /> New habit
           </button>
           {user && (
@@ -96,10 +96,10 @@ export default function AppShell({ loading, onAdd, onOpenIntelligence, onOpenAiC
         <main className="main-content">{children}</main>
         <Navigation mobile />
         <div className="mobile-only-actions">
-          <button className="mobile-add mobile-capture" type="button" onClick={onOpenAiCapture} aria-label="AI Habit Builder">
+          <button className="mobile-add mobile-capture" type="button" onClick={onAdd} aria-label="Enter habit manually">
             <Sparkles size={22} strokeWidth={2.2} />
           </button>
-          <button className="mobile-add" type="button" onClick={onAdd} aria-label="Create a habit"><Plus size={24} /></button>
+          <button className="mobile-add" type="button" onClick={onOpenAiCapture} aria-label="Create habit with text or photo"><Plus size={24} /></button>
         </div>
       </div>
     </div>

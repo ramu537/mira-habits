@@ -113,7 +113,8 @@ function HabitWorkspace({ user, onLogout }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  function openCreate() { setEditingHabit(null); setDialogOpen(true); }
+  function openManualCreate() { setEditingHabit(null); setDialogOpen(true); }
+  function openCreate() { setAiCaptureOpen(true); }
   function openEdit(habit) { setEditingHabit(habit); setDialogOpen(true); }
   function closeDialog() { if (!saving) { setDialogOpen(false); setEditingHabit(null); } }
 
@@ -169,7 +170,7 @@ function HabitWorkspace({ user, onLogout }) {
     <>
       <AppShell
         loading={manager.loading}
-        onAdd={openCreate}
+        onAdd={openManualCreate}
         onOpenIntelligence={() => setIntelligenceOpen(true)}
         onOpenAiCapture={() => setAiCaptureOpen(true)}
         onOpenAiSearch={() => setAiSearchOpen(true)}
@@ -182,6 +183,8 @@ function HabitWorkspace({ user, onLogout }) {
       <HabitDialog open={dialogOpen} habit={editingHabit} busy={saving} onClose={closeDialog} onSave={saveHabit} />
       <HabitIntelligenceDialog userId={user.uid} open={intelligenceOpen} manager={manager} onClose={() => setIntelligenceOpen(false)} onEdit={openEdit} />
       <AiHabitCaptureModal
+        onManual={() => { setAiCaptureOpen(false); openManualCreate(); }}
+        key={user.uid}
         open={aiCaptureOpen}
         onClose={() => setAiCaptureOpen(false)}
         onSuccess={(msg) => {
