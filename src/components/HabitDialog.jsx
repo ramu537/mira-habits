@@ -4,10 +4,13 @@ import { habitPalette } from "../lib/habits";
 
 const blankHabit = { name: "", cadence: "DAILY", targetPerWeek: 3, color: habitPalette[0].value, category: "GENERAL", purpose: "", cue: "", minimumAction: "" };
 
-export default function HabitDialog({ open, habit, busy, onClose, onSave }) {
+export default function HabitDialog({ open, habit, busy, error, onClose, onSave }) {
   const ref = useRef(null);
   const [form, setForm] = useState(blankHabit);
   const [attempted, setAttempted] = useState(false);
+  useEffect(() => {
+    if (open && error) ref.current?.querySelector(".integration-error")?.scrollIntoView({ block: "nearest" });
+  }, [open, error]);
 
   useEffect(() => {
     if (!open) return;
@@ -39,10 +42,11 @@ export default function HabitDialog({ open, habit, busy, onClose, onSave }) {
   }
 
   return (
-    <dialog ref={ref} className="dialog habit-dialog" onCancel={(event) => { event.preventDefault(); if (!busy) onClose(); }} onClick={(event) => { if (event.target === ref.current && !busy) onClose(); }}>
+    <dialog ref={ref} className="dialog habit-dialog" aria-labelledby="habit-form-title" onCancel={(event) => { event.preventDefault(); if (!busy) onClose(); }} onClick={(event) => { if (event.target === ref.current && !busy) onClose(); }}>
       <form className="dialog-card habit-form" onSubmit={submit} noValidate onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); event.currentTarget.requestSubmit(); } }}>
-        <header className="dialog-header"><div><span className="eyebrow">{habit ? "Refine the routine" : "A small step, repeated"}</span><h2>{habit ? "Edit habit" : "Create a habit"}</h2><p>Choose a rhythm that still feels realistic on a difficult week.</p></div><button className="icon-button" type="button" onClick={onClose} disabled={busy} aria-label="Close habit form"><X size={20} /></button></header>
+        <header className="dialog-header"><div><span className="eyebrow">{habit ? "Refine the routine" : "A small step, repeated"}</span><h2 id="habit-form-title">{habit ? "Edit habit" : "Create a habit"}</h2><p>Choose a rhythm that still feels realistic on a difficult week.</p></div><button className="icon-button" type="button" onClick={onClose} disabled={busy} aria-label="Close habit form"><X size={20} /></button></header>
         <div className="form-body">
+          {error && <p className="integration-error" role="alert">{error}</p>}
           <label className="field"><span>Habit name</span><input autoFocus required maxLength="80" placeholder="Morning walk, read for 20 minutes…" value={form.name} onChange={(event) => update("name", event.target.value)} aria-invalid={attempted && !form.name.trim()} />{attempted && !form.name.trim() && <small className="field-error">Give this habit a clear name.</small>}</label>
 
           <p>Daily by default. You can change the rhythm any time.</p>

@@ -758,9 +758,9 @@
     .history-row > header { align-items: flex-start; }
     .history-row__stats { gap: 0.6rem; }
     .history-cells { min-width: 24rem; justify-content: start; }
-    .dialog { align-items: end !important; padding: 0; }
-    .dialog-card { width: 100% !important; max-height: min(91vh, 48rem); border-bottom: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
-    .confirm-dialog .dialog-card { width: calc(100% - 2rem) !important; margin: 1rem; border: 1px solid var(--border-default); border-radius: var(--radius-lg); }
+    .dialog { align-items: end; padding: 0; }
+    .dialog-card { width: 100%; max-height: min(91vh, 48rem); border-bottom: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+    .confirm-dialog .dialog-card { width: calc(100% - 2rem); margin: 1rem; border: 1px solid var(--border-default); border-radius: var(--radius-lg); }
     .dialog-header, .form-body, .form-actions { padding-inline: 1rem; }
     .form-actions { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
     .cadence-choices { grid-template-columns: 1fr; }

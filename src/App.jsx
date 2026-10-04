@@ -98,8 +98,11 @@ function HabitWorkspace({ user, onLogout }) {
   const [aiSearchOpen, setAiSearchOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [deletingId, setDeletingId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+  useEffect(() => { setDeleteError(null); }, [user?.uid]);
   const closeToast = useCallback(() => setToast(null), []);
 
   useEffect(() => {
@@ -113,12 +116,13 @@ function HabitWorkspace({ user, onLogout }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  function openManualCreate() { setEditingHabit(null); setDialogOpen(true); }
+  function openManualCreate() { setSaveError(""); setEditingHabit(null); setDialogOpen(true); }
   function openCreate() { setAiCaptureOpen(true); }
-  function openEdit(habit) { setEditingHabit(habit); setDialogOpen(true); }
+  function openEdit(habit) { setSaveError(""); setEditingHabit(habit); setDialogOpen(true); }
   function closeDialog() { if (!saving) { setDialogOpen(false); setEditingHabit(null); } }
 
   async function saveHabit(payload) {
+    setSaveError("");
     setSaving(true);
     try {
       await manager.actions.saveHabit(payload, editingHabit?.id);
@@ -126,6 +130,7 @@ function HabitWorkspace({ user, onLogout }) {
       setEditingHabit(null);
       setToast({ tone: "success", message: editingHabit ? "Habit updated." : "Habit created." });
     } catch (error) {
+      setSaveError(error.message || "Could not save. Your input is kept.");
       setToast({ tone: "error", message: error.message });
     } finally {
       setSaving(false);
@@ -142,12 +147,14 @@ function HabitWorkspace({ user, onLogout }) {
   }
 
   async function deleteHabit(id) {
+    setDeleteError(null);
     setDeletingId(id);
     try {
       await manager.actions.deleteHabit(id);
       setToast({ tone: "success", message: "Habit deleted." });
       return true;
     } catch (error) {
+      setDeleteError({ id, message: error.message || "Could not delete. Your record is kept." });
       setToast({ tone: "error", message: error.message });
       return false;
     } finally {
@@ -160,7 +167,7 @@ function HabitWorkspace({ user, onLogout }) {
   else if (!manager.ready && manager.loadError) content = <ErrorState message={manager.loadError} onRetry={manager.retry} />;
   else content = (
     <Routes>
-      <Route path="/" element={<TodayPage manager={manager} deletingId={deletingId} onAdd={openCreate} onToggle={toggleHabit} onEdit={openEdit} onDelete={deleteHabit} />} />
+      <Route path="/" element={<TodayPage manager={manager} deleteError={deleteError} deletingId={deletingId} onAdd={openCreate} onToggle={toggleHabit} onEdit={openEdit} onDelete={deleteHabit} />} />
       <Route path="/history" element={<HistoryPage habits={manager.habits} today={manager.today} analysis={manager.analysis} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -180,7 +187,7 @@ function HabitWorkspace({ user, onLogout }) {
         {manager.ready && manager.loadError && <div className="habit-refresh-error" role="alert"><p>Your habits could not be refreshed. Displayed records may be out of date.</p><button className="button button--secondary" type="button" disabled={manager.loading || manager.writing} onClick={manager.retry}>Refresh records</button></div>}
         {content}
       </AppShell>
-      <HabitDialog open={dialogOpen} habit={editingHabit} busy={saving} onClose={closeDialog} onSave={saveHabit} />
+      <HabitDialog open={dialogOpen} habit={editingHabit} busy={saving} error={saveError} onClose={closeDialog} onSave={saveHabit} />
       <HabitIntelligenceDialog userId={user.uid} open={intelligenceOpen} manager={manager} onClose={() => setIntelligenceOpen(false)} onEdit={openEdit} />
       <AiHabitCaptureModal
         onManual={() => { setAiCaptureOpen(false); openManualCreate(); }}

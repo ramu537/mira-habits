@@ -10,7 +10,7 @@ export default function HabitRow({ habit, today, days, activeDay, progress, togg
   useEffect(() => {
     if (!menuOpen) return;
     const close = event => { if (!ref.current?.contains(event.target)) setMenuOpen(false); };
-    const escape = event => { if (event.key === "Escape") { setMenuOpen(false); ref.current?.querySelector("button")?.focus(); } };
+    const escape = event => { if (event.key === "Escape" && !event.defaultPrevented) { event.preventDefault(); setMenuOpen(false); ref.current?.querySelector("button")?.focus(); } };
     document.addEventListener("pointerdown", close);
     document.addEventListener("keydown", escape);
     return () => { document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", escape); };
@@ -34,7 +34,7 @@ export default function HabitRow({ habit, today, days, activeDay, progress, togg
       </td>;
     })}
     <td><div className="row-menu" ref={ref}><button className="icon-button" type="button" disabled={toggling} aria-label={"Actions for " + habit.name} aria-expanded={menuOpen} onClick={() => setMenuOpen(value => !value)}><MoreHorizontal size={18} /></button>
-      {menuOpen && <div className="row-menu__popover"><button type="button" disabled={toggling} onClick={() => { setMenuOpen(false); onEdit(habit); }}><Pencil size={16} /> Edit habit</button><button className="danger-action" type="button" disabled={toggling} onClick={() => { setMenuOpen(false); onDelete(habit); }}><Trash2 size={16} /> Delete</button></div>}
+      {menuOpen && <div className="row-menu__popover"><button type="button" disabled={toggling} onClick={() => { ref.current?.querySelector("button")?.focus(); setMenuOpen(false); onEdit(habit); }}><Pencil size={16} /> Edit habit</button><button className="danger-action" type="button" disabled={toggling} onClick={() => { ref.current?.querySelector("button")?.focus(); setMenuOpen(false); onDelete(habit); }}><Trash2 size={16} /> Delete</button></div>}
     </div></td>
   </tr>;
 }

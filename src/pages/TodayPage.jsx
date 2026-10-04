@@ -5,7 +5,7 @@ import HabitRow from "../components/HabitRow";
 import { dateRange, fullDate, shortDate } from "../lib/dates";
 import { isCompleted, weeklyProgress } from "../lib/habits";
 
-export default function TodayPage({ manager, deletingId, onAdd, onToggle, onEdit, onDelete }) {
+export default function TodayPage({ manager, deletingId, deleteError, onAdd, onToggle, onEdit, onDelete }) {
   const [pendingDelete, setPendingDelete] = useState(null);
   const { habits, today, writing, analysis } = manager;
   const [activeDay, setActiveDay] = useState(today);
@@ -44,6 +44,6 @@ export default function TodayPage({ manager, deletingId, onAdd, onToggle, onEdit
         </> : <div className="routine-empty"><Sparkles size={28} /><h3>Start with one small routine</h3><p>Give it a name and choose how often. Everything else is optional.</p><button className="button button--primary" type="button" onClick={onAdd}><Plus size={17} /> Create a habit</button></div>}
       </section>
     </div>
-    <ConfirmDialog open={Boolean(pendingDelete)} habit={pendingDelete} busy={deletingId === pendingDelete?.id} onCancel={() => setPendingDelete(null)} onConfirm={confirmDelete} />
+    <ConfirmDialog error={deleteError && deleteError.id === pendingDelete?.id ? deleteError.message : ""} open={Boolean(pendingDelete)} habit={pendingDelete} busy={deletingId === pendingDelete?.id} onCancel={() => setPendingDelete(null)} onConfirm={confirmDelete} />
   </div>;
 }
